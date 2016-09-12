@@ -1,0 +1,3 @@
+# Requirements for EBLink Python encapsulation
+
+pip install rpy2

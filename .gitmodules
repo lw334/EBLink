@@ -1,0 +1,3 @@
+[submodule "ebLink"]
+	path = ebLink
+	url = https://github.com/resteorts/ebLink
