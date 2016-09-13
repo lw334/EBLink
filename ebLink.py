@@ -37,6 +37,12 @@ class EBLink(object):
 
     ## TODO: Return a link structure and estimated population size
     def build(self):
+        '''
+        :return:
+         lamgs: R matrix of identified matches in each Gibbs sampling iteration
+         estPopSize: R matrix of estimated population size in each Gibbs sampling iteration
+        '''
+
         pandas2ri.activate()
         matrix = ro.r['as.matrix']
         xc = matrix(self.Xs)
@@ -53,19 +59,55 @@ class EBLink(object):
             ro.r("d <- function(string1,string2){adist(string1,string2)}")
             d = ro.r['d']
 
-        # Loads in Gibbs sampler and plyr packages
+        # Load in Gibbs sampler and plyr packages
         ro.r("source('../ebLink/R/code/ebGibbsSampler.R', chdir = TRUE)")
         importr("plyr")
 
-        # Runs the gibbs sampler
+        # Run the gibbs sampler
         gibbs = ro.r["rl.gibbs"]
-        #lam = gibbs(file_num=self.filenum, X_s=self.Xs, X_c=self.Xc, num_gs=self.numgs, a=self.a, b=self.b, c=self.c, d=d, M=self.M)
-        lam = gibbs(file_num=filenum, X_s = xs, X_c=xc, num_gs=numgs, a=a,b=b,c=c,d=d,M=m)
+        lamgs = gibbs(file_num=filenum, X_s=xs, X_c=xc, num_gs=numgs, a=a, b=b, c=c, d=d, M=m)
+
         # Calculate estimated population sizes by finding number of uniques
         apply = ro.r["apply"]
         ro.r("len_uniq <- function(x){length(unique(x))}")
         len_uniq = ro.r['len_uniq']
-        estPopSize = apply(lam, 1, len_uniq)
-        return np.array(lam), np.array(estPopSize)
+        estPopSize = apply(lamgs, 1, len_uniq)
 
-    ## TODO: Return Maximum Matching Set
+        print("Estimated population size: ", estPopSize)
+
+        return lamgs, estPopSize
+
+
+    def get_MMS(self, lamgs, estPopSize):
+
+        '''
+        :param lamgs:
+        :param estPopSize:
+        :return: a list of tuples of indexes of matched records
+        '''
+
+        pair_output = []
+
+        # Only look for linked pairs if there are pairs to look for
+        if estPopSize < self.M:
+
+            pandas2ri.activate()
+
+            ro.r("source('../ebLink/R/code/analyzeGibbs.R', chdir = TRUE)")
+            links = ro.r["links"]
+            pairwise = ro.r["pairwise"]
+
+            est_links = links(lamgs)
+            est_pairs = pairwise(est_links)
+            est_pairs = np.array(est_pairs)
+
+            pair_output = [tuple(x) for x in est_pairs]
+
+        return pair_output
+
+
+    def build_crosswalk(self):
+        pass
+
+    def build_linked_data(self):
+        pass

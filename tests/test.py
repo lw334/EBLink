@@ -10,8 +10,8 @@ def test_create():
     strings = df[['fname_c1', 'lname_c1','by','bm']]
     df["filenum"] = 1
     df["filenum"][:200] = 1
-    df["filenum"][200:350] = 2
-    df["filenum"][350:500] = 3
+    df["filenum"][200:500] = 2
+    df["filenum"][500:511] = 3
     # Xc = np.matrix(categoricals)
     # Xs = np.matrix(strings)
     # filenum = np.matrix(df["filenum"])
@@ -23,9 +23,13 @@ def test_create():
     b = 999
     c = 1
     numgs = 10
-    link = ebLink.EBLink(filenum, Xs, Xc, numgs, a, b, c, "jaro-winkler", M)
+    link = ebLink.EBLink(filenum, Xs, Xc, numgs, a, b, c, "adist", M)
     return link
 
 def test_build(link):
     lamgs, estPopSize = link.build()
     return lamgs, estPopSize
+
+def test_MMS(link, lamgs, estPopSize):
+    MMS = link.get_MMS(lamgs, estPopSize)
+    return MMS
