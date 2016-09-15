@@ -54,6 +54,7 @@ class EBLink(object):
 
     #TODO: Return a link structure and estimated population size
     def get_link_structure(self):
+
         '''
         :return:
          lamgs: R matrix of identified matches in each Gibbs sampling iteration
@@ -65,7 +66,7 @@ class EBLink(object):
         xc = matrix(self.Xs)
         xs = matrix(self.Xc)
         numgs = ro.IntVector([self.numgs])
-        m = ro.IntVector([self.M])
+        M = ro.IntVector([self.M])
         filenum = ro.IntVector(np.array(self.filenum))
         a = ro.IntVector([self.a])
         b = ro.IntVector([self.b])
@@ -84,7 +85,7 @@ class EBLink(object):
         importr("plyr")
         # Run the gibbs sampler
         gibbs = ro.r["rl.gibbs"]
-        lamgs = gibbs(file_num=filenum, X_s=xs, X_c=xc, num_gs=numgs, a=a, b=b, c=c, d=d, M=m)
+        lamgs = gibbs(file_num=filenum, X_s=xs, X_c=xc, num_gs=numgs, a=a, b=b, c=c, d=d, M=M)
 
         # Calculate estimated population sizes by finding number of uniques
         apply = ro.r["apply"]
@@ -103,10 +104,6 @@ class EBLink(object):
         :return: a list of tuples of indexes of matched records
         '''
 
-        #pair_output = []
-
-        # Only look for linked pairs if the estimated population size < the true population size meaning there are duplicates
-        # if np.max(estPopSize) < self.M:
         pandas2ri.activate()
         ro.r("source('../ebLink/R/code/analyzeGibbs.R', chdir = TRUE)")
         links = ro.r["links"]
@@ -117,16 +114,7 @@ class EBLink(object):
         est_pairs = np.array(est_pairs)
 
         pair_output = [tuple(x) for x in est_pairs]
-
         return pair_output
-
-
-    def get_matches(self, pair_output):
-        '''
-
-        :param pair_output:
-        :return: write out a file of matched records
-        '''
 
 
 

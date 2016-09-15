@@ -20,15 +20,10 @@ def preprocess():
     a = 1
     b = 999
     c = 1
-    numgs = 10
+    numgs = 5
     return filenum, Xs, Xc, numgs, a, b, c, M
 
 class TestEBLink(unittest.TestCase):
-
-    def setUp(self):
-        filenum, Xs, Xc, numgs, a, b, c, M = preprocess()
-        d = "lv"
-        self.link = ebLink.EBLink(filenum, Xs, Xc, numgs, a, b, c, d, M)
 
     def test_invalid_string_metric(self):
         filenum, Xs, Xc, numgs, a, b, c, M = preprocess()
