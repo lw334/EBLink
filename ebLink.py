@@ -1,4 +1,5 @@
 import readline
+import pandas as pd
 import numpy as np
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
@@ -9,50 +10,45 @@ sys.setrecursionlimit(5000)
 
 class EBLink(object):
 
-    ## TODO: add in a parameter for specifiying distance function for string values
-    def __init__(self, filenum, Xs, Xc, numgs, a, b, c, d, M):
-        '''
-        :param filenum: An array of numbers indicating which file the entries are from
-        :param Xs: An array of string variables
-        :param Xc: An array of categorical variables
-        :param numgs: An integer indicating total number of gibb iterations
-        :param a: An integer indicating the shape parameter of Beta prior
-        :param b: An integer indicating the scale paramter of Beta prior
-        :param c: An integer that is a positive constant
-        :param d: Any distance metric measure the latent and observed string
-                - default: "lv": Standard Levenshtein distance
-
-                - "osa": Optimal string aligment (restricted Damerau-Levenshtein distance)
-                - "lv": Levenshtein distance(as in R's native adist)
-                - "dl": Full Damerau-Levenshtein distance
-                - "hamming": Hamming distance ( a and b must have same # of characters)
-                - "lcs": longest common substring distance
-                - "qgram": Q-gram distance
-                - "cosine": cosing distance for q-gram count vectors
-                - "jaccard": Jaccard distance for q-gram count vectors
-                - "jw": Jaro, and Jaro-Winker distance
-                - "soundex": Soundex based string distance
-
-        :param M: The true value of the population size
-
-        :Return: Returns the estimated linkage structure via Gibbs sampling
-        '''
+    def __init__(self, file_paths, string_cols, cate_cols, numgs, a, b, c, d, M):
 
         available_string_dist = ["osa", "lv", "dl", "hamming", "lcs", "qgram", "cosine", "jaccard", "jw", "soundex"]
-        self.filenum = filenum
-        self.Xs = Xs
-        self.Xc = Xc
+        self.file_paths = file_paths
         self.numgs = numgs
         self.a = a
         self.b = b  # a string specifying the type of distance measurement
         self.c = c
+
         if d in available_string_dist:
             self.d = d
         else:
             raise ValueError("The distance measurement is invalid. Please select from osa, lv, dl, hamming, lcs, qgram, cosine, jaccard, jw, soundex")
-        self.M = M
 
-    #TODO: Return a link structure and estimated population size
+        self.M = M
+        self.string_cols = string_cols
+        self.cate_cols = cate_cols
+
+        # constructed parameters
+        self.df = self.set_df()
+        self.Xs = self.set_string_cols()
+        self.Xc = self.set_categorical_cols()
+
+
+    def set_df(self):
+        total_df = pd.read_csv(self.file_paths[0])
+        total_df["filenum"] = 0
+        for i, f in enumerate(self.file_paths[1:]):
+            df = pd.read_csv(f)
+            df["filenum"] = i + 1
+            total_df = total_df.append(df)
+        return total_df
+
+    def set_categorical_cols(self):
+        return self.df[self.cate_cols]
+
+    def set_string_cols(self):
+        return self.df[self.string_cols]
+
     def get_link_structure(self):
         '''
         :return:
@@ -65,8 +61,8 @@ class EBLink(object):
         xc = matrix(self.Xs)
         xs = matrix(self.Xc)
         numgs = ro.IntVector([self.numgs])
-        m = ro.IntVector([self.M])
-        filenum = ro.IntVector(np.array(self.filenum))
+        M = ro.IntVector([self.M])
+        filenum = ro.IntVector(np.array(self.df["filenum"]))
         a = ro.IntVector([self.a])
         b = ro.IntVector([self.b])
         c = ro.IntVector([self.c])
@@ -84,7 +80,7 @@ class EBLink(object):
         importr("plyr")
         # Run the gibbs sampler
         gibbs = ro.r["rl.gibbs"]
-        lamgs = gibbs(file_num=filenum, X_s=xs, X_c=xc, num_gs=numgs, a=a, b=b, c=c, d=d, M=m)
+        lamgs = gibbs(file_num=filenum, X_s=xs, X_c=xc, num_gs=numgs, a=a, b=b, c=c, d=d, M=M)
 
         # Calculate estimated population sizes by finding number of uniques
         apply = ro.r["apply"]
@@ -127,6 +123,7 @@ class EBLink(object):
         :param pair_output:
         :return: write out a file of matched records
         '''
+        pass
 
 
 
